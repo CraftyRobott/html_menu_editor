@@ -58,7 +58,7 @@ $('veFront').onclick=()=>{if(state.selected){stage.append(state.selected);persis
 $('veBack').onclick=()=>{if(state.selected){stage.insertBefore(state.selected,stage.firstChild);persist();select(state.selected)}};
 $('veGrid').onclick=()=>stage.classList.toggle('ve-grid');$('veRefresh').onclick=hydrate;
 $('veRuntime').onclick=()=>$('runtimePreviewBtn').click();$('veExport').onclick=()=>$('exportBtn').click();
-$('veAdvanced').onclick=()=>{document.querySelector('.layout').style.display='grid';root.style.display='none'};
+const back=document.createElement('button');back.id='veReturn';back.textContent='Visual builder';back.hidden=true;back.onclick=()=>{document.querySelector('.layout').style.display='none';root.style.display='grid';back.hidden=true};document.querySelector('.top').append(back);$('veAdvanced').onclick=()=>{document.querySelector('.layout').style.display='grid';root.style.display='none';back.hidden=false};
 $('veSelect').onclick=()=>status('Select mode');
 stage.addEventListener('click',e=>{const el=e.target.closest(':scope > *');if(el&&el.parentElement===stage){e.preventDefault();e.stopPropagation();select(el)}else clearSelection()});
 stage.addEventListener('pointerdown',e=>{const el=e.target.closest(':scope > *');if(!el||el.parentElement!==stage||el.dataset.vePlaceholder)return;const r=el.getBoundingClientRect(),resize=e.clientX>r.right-14&&e.clientY>r.bottom-14;state.drag={el,x:e.clientX,y:e.clientY,left:el.offsetLeft,top:el.offsetTop,width:r.width,height:r.height,mode:resize?'resize':'move',moved:false}});
