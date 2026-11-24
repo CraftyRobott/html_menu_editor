@@ -1,6 +1,6 @@
 # HTML Menu Editor
 
-A standalone browser-based editor for importing and modifying an existing HTML/CSS/JavaScript menu system.
+A browser-based visual drag-and-drop editor for building and modifying HTML/CSS/JavaScript menu systems, with a Retro Bowl runtime preview.
 
 ## Run it
 
@@ -15,11 +15,12 @@ Then visit http://localhost:8000.
 ## Workflow
 
 1. Choose **Import files** and select the menu's HTML, CSS and JavaScript files.
-2. Select the HTML file in the project list to load its menu structure and preview.
-3. Select elements in the structure tree to edit their text, class, ID, link destination and common inline styles.
-4. Reorder elements with drag and drop or the Move up / Move down / Indent / Outdent controls.
-5. Use the HTML, CSS and JavaScript source tabs for full-file changes.
-6. Export the edited project as a ZIP, or explicitly push the files to GitHub.
+2. Use the visual workspace as the main editor. Add buttons, text, images, panels, containers and dividers from the element palette.
+3. Select an element on the canvas or in Layers, then edit its label, ID, CSS class, position, size, colors, typography, padding, border radius and image source in the Inspector.
+4. Drag elements to reposition them. Use Layers to select an element and the Arrange controls to duplicate, delete, bring forward or send backward.
+5. Configure button behavior with On Click or On Hover events. Available actions include URL navigation, showing an element by ID, calling a global game function, and custom JavaScript.
+6. Use **Launch game runtime** to open the actual Retro Bowl runtime preview. Use **Advanced source editor** for direct HTML/CSS/JavaScript editing when needed.
+7. Export the edited project as a ZIP, or explicitly push the files to GitHub.
 
 ## GitHub publishing
 
@@ -40,3 +41,8 @@ Imported JavaScript is disabled in the preview by default. Enable **Run imported
 ## Retro Bowl runtime preview
 
 The Live Preview panel now includes a **Game URL** field and **Launch game runtime** button. This mode uses the imported HTML as its shell, keeps the original game-engine and asset script URLs pointed at your running Retro Bowl project, and replaces matching linked CSS/JS files with the imported versions (matched by filename). For the Retro Bowl College frontend, import `index_nopoki.html`, `frontend.css`, `runtime-bridge.js`, and `app.js`; keep the original game engine and its assets in the project served at the URL you enter. For best compatibility, serve the editor and game from the same localhost origin (for example, put a copy of the editor's `index.html` in the Retro Bowl project root and open it from that same local server). Then enter `http://localhost:8000/index_nopoki.html` and click **Launch game runtime**. This runs the real GameMaker runtime, so a franchise save must be available in that browser profile for live franchise data to appear. The runtime iframe allows scripts and same-origin access; only use it with game files you trust.
+
+
+## Visual builder
+
+The visual builder is the primary interface. It uses a 16:9 canvas and writes canvas edits back into the imported HTML. Action metadata is stored as `data-ve-action` on elements. The builder is intended for constructing menu layouts and visual prototypes; complex pre-existing layouts may need adjustment after import because top-level body elements are placed on the canvas as individually editable objects.
