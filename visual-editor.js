@@ -1,0 +1,71 @@
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id),api=window.MenuEditorAPI;
+if(!api)return;
+const state={selected:null,drag:null};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const link=document.createElement('link');link.rel='stylesheet';link.href='visual-editor.css';document.head.append(link);
+const root=document.createElement('main');root.id='visualBuilder';
+root.innerHTML=\`
+<section class="ve-pane"><div class="ve-head">Add elements <span class="pill">Drag or click</span></div><div class="ve-body">
+<div class="ve-palette">
+<button class="ve-tool" data-add="button"><b>▭</b><span>Button</span></button><button class="ve-tool" data-add="text"><b>T</b><span>Text</span></button>
+<button class="ve-tool" data-add="image"><b>▧</b><span>Image</span></button><button class="ve-tool" data-add="panel"><b>▱</b><span>Panel</span></button>
+<button class="ve-tool" data-add="container"><b>▦</b><span>Container</span></button><button class="ve-tool" data-add="divider"><b>━</b><span>Divider</span></button>
+</div><div class="ve-section">Layers</div><div id="veLayers" class="ve-layers"><div class="ve-empty">Import a menu or add an element.</div></div>
+<div class="ve-section">Arrange</div><div class="ve-actions"><button id="veFront">Bring forward</button><button id="veBack">Send backward</button><button id="veDuplicate">Duplicate</button><button id="veDelete" class="danger">Delete</button></div>
+<div class="ve-section">Project</div><p class="ve-muted">Build and arrange menu elements visually. Changes are written back into the imported HTML.</p></div></section>
+<section class="ve-stage-wrap"><div class="ve-toolbar"><button id="veSelect" class="primary">Select</button><button id="veGrid">Grid</button><button id="veRefresh">Refresh canvas</button><span class="spacer"></span><button id="veRuntime">Launch game runtime</button><button id="veExport" class="primary">Export ZIP</button></div>
+<div class="ve-workarea"><div id="veStage" class="ve-stage"><div data-ve-placeholder="1">Import an HTML menu, or add elements from the left panel.</div></div></div>
+<div class="ve-toolbar"><span id="veStatus" class="ve-status">Visual editor ready</span><span class="spacer"></span><button id="veAdvanced">Advanced source editor</button></div></section>
+<aside class="ve-pane"><div class="ve-head">Inspector <span id="veSelectedTag" class="pill">Nothing selected</span></div><div class="ve-body">
+<div id="veInspectorEmpty" class="ve-empty">Select an element on the canvas or in Layers.</div><div id="veInspector" class="hidden">
+<div class="ve-field"><label>Text / label</label><input id="veText"></div><div class="ve-field"><label>Element ID</label><input id="veId"></div><div class="ve-field"><label>CSS class</label><input id="veClass"></div>
+<div class="ve-section">Position and size</div><div class="ve-row"><div class="ve-field"><label>X</label><input id="veX" type="number"></div><div class="ve-field"><label>Y</label><input id="veY" type="number"></div></div>
+<div class="ve-row"><div class="ve-field"><label>Width</label><input id="veW"></div><div class="ve-field"><label>Height</label><input id="veH"></div></div>
+<div class="ve-section">Appearance</div><div class="ve-row"><div class="ve-field"><label>Text color</label><input id="veColor" type="color"></div><div class="ve-field"><label>Background</label><input id="veBg" type="color"></div></div>
+<div class="ve-row"><div class="ve-field"><label>Font size</label><input id="veFont" placeholder="18px"></div><div class="ve-field"><label>Font weight</label><select id="veWeight"><option value="">Default</option><option>400</option><option>500</option><option>600</option><option>700</option><option>800</option></select></div></div>
+<div class="ve-row"><div class="ve-field"><label>Padding</label><input id="vePadding" placeholder="8px 12px"></div><div class="ve-field"><label>Border radius</label><input id="veRadius" placeholder="6px"></div></div>
+<div class="ve-field"><label>Image URL / source</label><input id="veSrc" placeholder="Image URL or relative path"></div>
+<div class="ve-section">Button behavior</div><div class="ve-field"><label>Event</label><select id="veEvent"><option value="click">On click</option><option value="mouseenter">On hover</option></select></div>
+<div class="ve-field"><label>Action type</label><select id="veAction"><option value="none">No action</option><option value="navigate">Navigate to URL</option><option value="screen">Show element / screen</option><option value="game">Call game function</option><option value="custom">Custom JavaScript</option></select></div>
+<div class="ve-field" id="veActionValueWrap"><label>Action value</label><textarea id="veActionValue" placeholder="URL, element ID, function name, or JavaScript"></textarea></div>
+<p class="ve-muted">Custom JavaScript runs in the preview frame. Only use code you trust.</p><div class="ve-actions"><button id="veApply" class="primary">Apply changes</button><button id="veClearAction">Clear action</button></div>
+</div></div></aside>\`;
+document.querySelector('.top').after(root);
+const stage=$('veStage');
+function status(s){$('veStatus').textContent=s}
+function docFromSource(){return api.parseHTML()}
+function saveDoc(doc){$('htmlSource').value='<!doctype html>\\n'+doc.documentElement.outerHTML;api.saveSource();status('Changes saved to project HTML')}
+function label(el){return (el.tagName||'element').toLowerCase()+(el.id?' #'+el.id:'')+(el.innerText?.trim()?' — '+el.innerText.trim().slice(0,22):'')}
+function hex(c){const m=String(c).match(/\\d+/g);return !m||m.length<3?'#ffffff':'#'+m.slice(0,3).map(x=>Number(x).toString(16).padStart(2,'0')).join('')}
+function readAction(el){try{return JSON.parse(el.dataset.veAction||'{}')}catch{return {}}}
+function renderLayers(){const box=$('veLayers');box.innerHTML='';const els=[...stage.children].filter(e=>!e.dataset.vePlaceholder);if(!els.length){box.innerHTML='<div class="ve-empty">No elements yet.</div>';return}els.forEach(el=>{const b=document.createElement('button');b.className='ve-layer'+(el===state.selected?' active':'');b.innerHTML='<span>'+(el.tagName==='IMG'?'▧':el.tagName==='BUTTON'?'▭':'▱')+'</span><span>'+esc(label(el))+'</span>';b.onclick=()=>select(el);box.append(b)})}
+function select(el){if(!el||el===stage)return;if(state.selected)state.selected.classList.remove('ve-selected');state.selected=el;el.classList.add('ve-selected');$('veInspectorEmpty').classList.add('hidden');$('veInspector').classList.remove('hidden');$('veSelectedTag').textContent=el.tagName.toLowerCase();const cs=getComputedStyle(el);$('veText').value=el.tagName==='IMG'?'':(el.innerText||el.textContent||'').trim();$('veId').value=el.id||'';$('veClass').value=typeof el.className==='string'?el.className:'';$('veX').value=Math.round(el.offsetLeft);$('veY').value=Math.round(el.offsetTop);$('veW').value=el.style.width||Math.round(el.getBoundingClientRect().width)+'px';$('veH').value=el.style.height||Math.round(el.getBoundingClientRect().height)+'px';$('veColor').value=hex(cs.color);$('veBg').value=hex(cs.backgroundColor);$('veFont').value=el.style.fontSize||cs.fontSize;$('veWeight').value=el.style.fontWeight||'';$('vePadding').value=el.style.padding||'';$('veRadius').value=el.style.borderRadius||'';$('veSrc').value=el.getAttribute('src')||'';const a=readAction(el);$('veEvent').value=a.event||'click';$('veAction').value=a.type||'none';$('veActionValue').value=a.value||'';$('veActionValueWrap').classList.toggle('hidden',!a.type||a.type==='none');renderLayers()}
+function clearSelection(){if(state.selected)state.selected.classList.remove('ve-selected');state.selected=null;$('veInspector').classList.add('hidden');$('veInspectorEmpty').classList.remove('hidden');$('veSelectedTag').textContent='Nothing selected';renderLayers()}
+function persist(){const doc=docFromSource();doc.body.innerHTML='';[...stage.children].filter(e=>!e.dataset.vePlaceholder).forEach(el=>{const clone=el.cloneNode(true);clone.classList.remove('ve-selected');clone.removeAttribute('data-ve-new');doc.body.append(clone)});saveDoc(doc)}
+function create(kind,x=70,y=65){let el;if(kind==='button'){el=document.createElement('button');el.textContent='New Button';el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:180px;height:48px;background:#e8e4d7;color:#182433;border:0;border-radius:4px;font-weight:700;cursor:pointer;'}else if(kind==='text'){el=document.createElement('div');el.textContent='New Text';el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;color:#fff;font-size:24px;font-weight:700;'}else if(kind==='image'){el=document.createElement('img');el.alt='New image';el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:160px;height:100px;object-fit:contain;background:#263445;border:1px dashed #8293a7;'}else if(kind==='divider'){el=document.createElement('div');el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:240px;height:2px;background:#d8e0e9;'}else{el=document.createElement('div');el.textContent=kind==='panel'?'Panel':'Container';el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:240px;height:140px;background:'+(kind==='panel'?'#263445':'#ffffff12')+';border:1px solid #71849a;border-radius:6px;padding:12px;color:#fff;'}el.dataset.veKind=kind;stage.append(el);select(el);persist();status('Added '+kind)}
+function hydrate(){stage.innerHTML='';const doc=docFromSource(),els=[...doc.body.children].filter(e=>!['SCRIPT','STYLE','LINK'].includes(e.tagName));if(!els.length){stage.innerHTML='<div data-ve-placeholder="1">Add elements from the left panel to start building your menu.</div>';renderLayers();return}els.forEach((src,i)=>{const el=src.cloneNode(true);el.classList.remove('ve-selected');if(!el.style.position){el.style.position='absolute';el.style.left=(25+(i%3)*285)+'px';el.style.top=(25+Math.floor(i/3)*115)+'px';el.style.maxWidth='90%'}stage.append(el)});renderLayers();status('Loaded '+els.length+' top-level element(s)')}
+function apply(){const el=state.selected;if(!el)return;el.textContent=$('veText').value;el.id=$('veId').value;el.className=$('veClass').value;el.style.position='absolute';el.style.left=$('veX').value+'px';el.style.top=$('veY').value+'px';const size=v=>/^\\d+(\\.\\d+)?$/.test(v.trim())?v.trim()+'px':v;el.style.width=size($('veW').value);el.style.height=size($('veH').value);el.style.color=$('veColor').value;el.style.backgroundColor=$('veBg').value;el.style.fontSize=$('veFont').value;el.style.fontWeight=$('veWeight').value;el.style.padding=$('vePadding').value;el.style.borderRadius=$('veRadius').value;if(el.tagName==='IMG'&&$('veSrc').value)el.src=$('veSrc').value;el.dataset.veAction=JSON.stringify({event:$('veEvent').value,type:$('veAction').value,value:$('veActionValue').value});persist();select(el)}
+function runAction(a,el){try{if(a.type==='navigate'&&a.value)window.open(a.value,'_self');else if(a.type==='screen'&&a.value){const t=stage.querySelector('#'+CSS.escape(a.value.replace(/^#/,'').replace(/^#/,'')));if(t)t.hidden=false;else status('Element ID not found: '+a.value)}else if(a.type==='game'&&a.value){const fn=a.value.split('.').reduce((o,k)=>o?.[k],window);if(typeof fn==='function')fn.call(window);else status('Game function not found: '+a.value)}else if(a.type==='custom'&&a.value)(new Function('element','editor',a.value))(el,window)}catch(e){status('Action error: '+e.message)}}
+function bind(){
+document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>create(b.dataset.add,60+Math.random()*100,50+Math.random()*90));
+$('veApply').onclick=apply;$('veAction').onchange=()=>$('veActionValueWrap').classList.toggle('hidden',$('veAction').value==='none');
+$('veClearAction').onclick=()=>{if(state.selected){delete state.selected.dataset.veAction;$('veAction').value='none';$('veActionValue').value='';persist()}};
+$('veDelete').onclick=()=>{if(state.selected){state.selected.remove();clearSelection();persist()}};
+$('veDuplicate').onclick=()=>{if(state.selected){const c=state.selected.cloneNode(true);c.style.left=(state.selected.offsetLeft+20)+'px';c.style.top=(state.selected.offsetTop+20)+'px';stage.append(c);select(c);persist()}};
+$('veFront').onclick=()=>{if(state.selected){stage.append(state.selected);persist();select(state.selected)}};
+$('veBack').onclick=()=>{if(state.selected){stage.insertBefore(state.selected,stage.firstChild);persist();select(state.selected)}};
+$('veGrid').onclick=()=>stage.classList.toggle('ve-grid');$('veRefresh').onclick=hydrate;
+$('veRuntime').onclick=()=>$('runtimePreviewBtn').click();$('veExport').onclick=()=>$('exportBtn').click();
+$('veAdvanced').onclick=()=>{document.querySelector('.layout').style.display='grid';root.style.display='none'};
+$('veSelect').onclick=()=>status('Select mode');
+stage.addEventListener('click',e=>{const el=e.target.closest(':scope > *');if(el&&el.parentElement===stage){e.preventDefault();e.stopPropagation();select(el)}else clearSelection()});
+stage.addEventListener('pointerdown',e=>{const el=e.target.closest(':scope > *');if(!el||el.parentElement!==stage||el.dataset.vePlaceholder)return;state.drag={el,x:e.clientX,y:e.clientY,left:el.offsetLeft,top:el.offsetTop,moved:false}});
+stage.addEventListener('pointermove',e=>{if(!state.drag)return;const d=state.drag,scale=stage.clientWidth/960,dx=(e.clientX-d.x)/scale,dy=(e.clientY-d.y)/scale;if(Math.abs(dx)+Math.abs(dy)>3)d.moved=true;if(d.moved){d.el.style.position='absolute';d.el.style.left=Math.max(0,d.left+dx)+'px';d.el.style.top=Math.max(0,d.top+dy)+'px';if(state.selected===d.el){$('veX').value=Math.round(d.el.offsetLeft);$('veY').value=Math.round(d.el.offsetTop)}}});
+stage.addEventListener('pointerup',()=>{if(state.drag?.moved){persist();if(state.selected)select(state.selected)}state.drag=null});
+stage.addEventListener('click',e=>{const el=e.target.closest('[data-ve-action]');if(!el)return;const a=readAction(el);if((a.event||'click')==='click')runAction(a,el)});
+stage.addEventListener('mouseover',e=>{const el=e.target.closest('[data-ve-action]');if(el&&readAction(el).event==='mouseenter')runAction(readAction(el),el)});
+}
+window.addEventListener('menu-editor-files-updated',hydrate);bind();if(api.state.htmlName)hydrate();
+})();
