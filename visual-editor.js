@@ -15,7 +15,7 @@ root.innerHTML=`
 </div><div class="ve-section">Layers</div><div id="veLayers" class="ve-layers"><div class="ve-empty">Import a menu or add an element.</div></div>
 <div class="ve-section">Arrange</div><div class="ve-actions"><button id="veFront">Bring forward</button><button id="veBack">Send backward</button><button id="veDuplicate">Duplicate</button><button id="veDelete" class="danger">Delete</button></div>
 <div class="ve-section">Project</div><p class="ve-muted">Build and arrange menu elements visually. Changes are written back into the imported HTML.</p></div></section>
-<section class="ve-stage-wrap"><div class="ve-toolbar"><button id="veSelect" class="primary">Select</button><button id="veGrid">Grid</button><button id="veRefresh">Refresh canvas</button><span class="spacer"></span><button id="veRuntime">Launch game runtime</button><button id="veExport" class="primary">Export ZIP</button></div>
+<section class="ve-stage-wrap"><div class="ve-toolbar"><button id="veSelect" class="primary">Select</button><button id="veGrid">Grid</button><button id="veRefresh">Refresh canvas</button><span class="spacer"></span><input id="veRuntimeUrl" type="url" placeholder="Game URL (http://localhost:8000/index_nopoki.html)" style="min-width:180px;flex:1;padding:7px;border:1px solid var(--line);border-radius:6px;background:#111820;color:var(--text)"><button id="veRuntime">Launch game runtime</button><button id="veExport" class="primary">Export ZIP</button></div>
 <div class="ve-workarea"><div id="veStage" class="ve-stage"><div data-ve-placeholder="1">Import an HTML menu, or add elements from the left panel.</div></div></div>
 <div class="ve-toolbar"><span id="veStatus" class="ve-status">Visual editor ready</span><span class="spacer"></span><button id="veAdvanced">Advanced source editor</button></div></section>
 <aside class="ve-pane"><div class="ve-head">Inspector <span id="veSelectedTag" class="pill">Nothing selected</span></div><div class="ve-body">
@@ -57,7 +57,7 @@ $('veDuplicate').onclick=()=>{if(state.selected){const c=state.selected.cloneNod
 $('veFront').onclick=()=>{if(state.selected){stage.append(state.selected);persist();select(state.selected)}};
 $('veBack').onclick=()=>{if(state.selected){stage.insertBefore(state.selected,stage.firstChild);persist();select(state.selected)}};
 $('veGrid').onclick=()=>stage.classList.toggle('ve-grid');$('veRefresh').onclick=hydrate;
-$('veRuntime').onclick=()=>$('runtimePreviewBtn').click();$('veExport').onclick=()=>$('exportBtn').click();
+$('veRuntime').onclick=()=>{$('runtimeUrl').value=$('veRuntimeUrl').value;$('runtimePreviewBtn').click()};$('veExport').onclick=()=>$('exportBtn').click();
 const back=document.createElement('button');back.id='veReturn';back.textContent='Visual builder';back.hidden=true;back.onclick=()=>{document.querySelector('.layout').style.display='none';root.style.display='grid';back.hidden=true};document.querySelector('.top').append(back);$('veAdvanced').onclick=()=>{document.querySelector('.layout').style.display='grid';root.style.display='none';back.hidden=false};
 $('veSelect').onclick=()=>status('Select mode');
 stage.addEventListener('click',e=>{const el=e.target.closest('#veStage > *');if(el&&el.parentElement===stage){e.preventDefault();e.stopPropagation();select(el)}else clearSelection()});
