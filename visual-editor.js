@@ -6,7 +6,7 @@ const state={selected:null,drag:null};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const link=document.createElement('link');link.rel='stylesheet';link.href='visual-editor.css';document.head.append(link);
 const root=document.createElement('main');root.id='visualBuilder';
-root.innerHTML=\`
+root.innerHTML=`
 <section class="ve-pane"><div class="ve-head">Add elements <span class="pill">Drag or click</span></div><div class="ve-body">
 <div class="ve-palette">
 <button class="ve-tool" data-add="button"><b>▭</b><span>Button</span></button><button class="ve-tool" data-add="text"><b>T</b><span>Text</span></button>
@@ -31,7 +31,7 @@ root.innerHTML=\`
 <div class="ve-field"><label>Action type</label><select id="veAction"><option value="none">No action</option><option value="navigate">Navigate to URL</option><option value="screen">Show element / screen</option><option value="game">Call game function</option><option value="custom">Custom JavaScript</option></select></div>
 <div class="ve-field" id="veActionValueWrap"><label>Action value</label><textarea id="veActionValue" placeholder="URL, element ID, function name, or JavaScript"></textarea></div>
 <p class="ve-muted">Custom JavaScript runs in the preview frame. Only use code you trust.</p><div class="ve-actions"><button id="veApply" class="primary">Apply changes</button><button id="veClearAction">Clear action</button></div>
-</div></div></aside>\`;
+</div></div></aside>`;
 document.querySelector('.top').after(root);
 const stage=$('veStage');
 function status(s){$('veStatus').textContent=s}
