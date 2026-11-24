@@ -25,7 +25,7 @@ const state={files:new Map(),htmlName:null,selectedPath:null,selectedFile:null,d
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),3200)};
 const ext=n=>(n.split('.').pop()||'').toLowerCase();
-function addFiles(list){for(const f of list){const reader=new FileReader();reader.onload=()=>{state.files.set(f.name,{name:f.name,content:String(reader.result),type:ext(f.name)});if(['html','htm'].includes(ext(f.name))&&!state.htmlName)state.htmlName=f.name;renderFiles();if(state.htmlName){loadSources();refreshPreview()}$('projectStatus').textContent=state.files.size+' project file(s)';$('exportBtn').disabled=false;$('githubBtn').disabled=false};reader.readAsText(f)}}
+function addFiles(list){for(const f of list){const reader=new FileReader();reader.onload=()=>{state.files.set(f.name,{name:f.name,content:String(reader.result),type:ext(f.name)});if(['html','htm'].includes(ext(f.name))&&!state.htmlName)state.htmlName=f.name;renderFiles();if(state.htmlName){loadSources();refreshPreview()}$('projectStatus').textContent=state.files.size+' project file(s)';$('exportBtn').disabled=false;$('githubBtn').disabled=false;window.dispatchEvent(new Event('menu-editor-files-updated'))};reader.readAsText(f)}}
 function renderFiles(){$('fileCount').textContent=state.files.size+' files';$('fileList').innerHTML='';for(const f of state.files.values()){const b=document.createElement('div');b.className='file'+(f.name===state.selectedFile?' active':'');b.innerHTML='<span>▤</span><span>'+esc(f.name)+'</span><span class="pill">'+esc(f.type)+'</span>';b.onclick=()=>selectFile(f.name);$('fileList').append(b)}if(!state.files.size)$('fileList').innerHTML='<div class="empty">No files imported.</div>'}
 function selectFile(name){state.selectedFile=name;const f=state.files.get(name);if(!f)return;if(f.type==='html'||f.type==='htm'){state.htmlName=name;loadSources();refreshPreview()}else if(f.type==='css'){$('cssSource').value=f.content;switchTab('css')}else if(['js','mjs'].includes(f.type)){$('jsSource').value=f.content;switchTab('js')}else toast('Selected '+name+'. This file is preserved on export.');renderFiles()}
 function getFileByType(types){return [...state.files.values()].find(f=>types.includes(f.type))}
@@ -62,6 +62,8 @@ $('runScripts').onchange=refreshPreview;
 $('upBtn').onclick=()=>shiftNode(-1);$('downBtn').onclick=()=>shiftNode(1);$('indentBtn').onclick=indentNode;$('outdentBtn').onclick=outdentNode;$('duplicateBtn').onclick=duplicateNode;$('deleteBtn').onclick=deleteNode;
 ['nodeText','nodeClass','nodeId','nodeHref','nodeColor','nodeBackground','nodeFontSize','nodePadding','nodeStyle'].forEach(id=>$(id).addEventListener('change',applyProperties));
 document.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault()});document.addEventListener('drop',e=>{if(e.dataTransfer.files?.length){e.preventDefault();addFiles(e.dataTransfer.files)}});
+window.MenuEditorAPI={state,parseHTML,saveSource,refreshPreview,refreshRuntimePreview,exportProject};
 })();
 </script>
+<script src="visual-editor.js"></script>
 </body></html>
